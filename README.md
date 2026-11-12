@@ -102,10 +102,10 @@
 
 ## 6. 공동 제작자 (Contributors & Team)
 
-| 이름 | GitHub 계정 / 역할 |
+| 이름 | 역할 / GitHub |
 | :--- | :--- |
-| **주상원** | [@jusangwon](https://github.com/jusangwon) — 공동 기획 및 개발 |
-| **오지수** | [@ohsu0830](https://github.com/ohsu0830) — 공동 기획 및 개발 |
+| **주상원** | 공동 기획 및 개발 ([@jusangwon](https://github.com/jusangwon)) |
+| **오지수** | 공동 기획 및 개발 ([@ohsu0830](https://github.com/ohsu0830)) |
 | **정지한** | 공동 기획 및 제작 |
 | **이서진** | 공동 기획 및 제작 |
 
