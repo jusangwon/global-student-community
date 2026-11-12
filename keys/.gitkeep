@@ -1,3 +1,0 @@
-# 이 폴더에 gemkey 파일(Gemini API Key 한 줄)을 넣으면 로컬 서버(server.py)에서 자동으로 인식합니다.
-# .gitignore 설정에 의해 실제 키 파일은 깃허브에 커밋되지 않습니다.
-
