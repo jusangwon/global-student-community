@@ -1,0 +1,2 @@
+# Built-in Python standard library only.
+# No external pip dependencies required.
