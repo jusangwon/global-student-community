@@ -1,0 +1,10 @@
+{
+  "name": "이름 미정 — 캠퍼스 커뮤니티 & 메뉴 번역",
+  "short_name": "이름 미정",
+  "start_url": "/#board",
+  "display": "standalone",
+  "background_color": "#FAF8F5",
+  "theme_color": "#E85A2A",
+  "orientation": "portrait"
+}
+

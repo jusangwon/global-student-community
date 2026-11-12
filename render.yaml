@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: global-campus-community
+    runtime: python
+    buildCommand: ""
+    startCommand: python server.py
+    envVars:
+      - key: NO_BROWSER
+        value: "1"
+      - key: GEMINI_API_KEY
+        sync: false
+

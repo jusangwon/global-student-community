@@ -1,0 +1,404 @@
+<!doctype html>
+<html lang="ko">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#E85A2A">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="manifest" href="manifest.json">
+  <title>다국어 학생 커뮤니티</title>
+  <link rel="icon" type="image/svg+xml" href="image/profile/profile_icon.svg">
+  <link rel="apple-touch-icon" href="image/profile/profile_icon.svg">
+  <!--
+    [지도 SDK 설정 안내]
+    현재는 API 키 없이 즉시 작동하는 오픈소스 Leaflet + OpenStreetMap을 사용합니다.
+    추후 카카오맵 또는 네이버 지도로 교체할 경우 아래 스크립트로 변경하고 app.js의 MAP_PROVIDER 설정을 참고하세요:
+    - 카카오맵: <script src="//dapi.kakao.com/v2/maps/sdk.js?appkey=YOUR_KAKAO_JS_KEY&libraries=services"></script>
+    - 네이버지도: <script src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpClientId=YOUR_NAVER_CLIENT_ID&submodules=geocoder"></script>
+  -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+  <header class="topbar">
+    <a class="brand" href="#board" aria-label="이방인"><span>이름 미정</span></a>
+    <div class="top-actions">
+      <span id="natPill" class="nat-pill" title="내 정보 → 국적 설정에서 변경"></span>
+      <a class="icon-button" href="#saved" aria-label="저장">☆</a>
+      <a class="avatar av-wrap" href="#profile" aria-label="내 정보" id="topAvatar"><img id="topAvatarImg" src="image/profile/profile_icon.svg" alt="프로필"><span id="topAvatarBadge" class="av-vbadge" hidden></span></a>
+    </div>
+  </header>
+
+  <main>
+    <!-- ===================== 게시판 (메인) ===================== -->
+    <section id="page-board" class="page">
+      <div class="page-title"><span class="section-kicker">CAMPUS COMMUNITY</span>
+        <h1 data-i18n="boardTitle">학생 게시판</h1>
+        <p data-i18n="boardDesc">어떤 언어로 써도, 모두가 자기 나라 언어로 읽어요.</p>
+      </div>
+      <div id="feedNotice" class="notice-card" hidden></div>
+      <div id="boardHub" class="chip-scroll"></div>
+      <div id="prepHubWrap" class="prep-hub-wrap">
+        <span class="prep-hub-label" data-i18n="prepSectionTitle">✈️ 유학 준비 게시판</span>
+        <div id="prepHub" class="chip-scroll prep-scroll"></div>
+      </div>
+      <div id="boardHome">
+        <section class="home-block">
+          <div class="section-heading">
+            <div><span class="section-kicker">HOT</span>
+              <h2 data-i18n="hotTitle">실시간 인기 글</h2>
+            </div>
+          </div>
+          <div id="hotList" class="hot-grid"></div>
+        </section>
+        <section class="home-block">
+          <div class="section-heading">
+            <div><span class="section-kicker">NEW</span>
+              <h2 data-i18n="recentTitle">최신 글</h2>
+            </div><button type="button" class="more-link text-button" data-board="all" data-i18n="seeAll">전체 보기
+              ›</button>
+          </div>
+          <div id="recentList" class="row-card"></div>
+        </section>
+      </div>
+      <div id="hubWrap" class="hub-head" hidden><button id="hubBack" class="text-button" type="button"
+          data-i18n="boardHome">← 게시판 홈</button><b id="boardName"></b></div>
+      <div id="boardBar" class="board-bar" hidden></div>
+      <div id="catBar" class="board-bar" hidden></div>
+      <div id="feedWrap" hidden>
+        <div id="feedList" class="stack-list"></div>
+      </div>
+      <button id="fab" class="fab" type="button" aria-label="글쓰기">＋</button>
+    </section>
+
+    <!-- ===================== 게시글 상세 ===================== -->
+    <section id="page-post" class="page" hidden>
+      <button class="text-button" type="button" data-back data-i18n="backList">← 목록으로</button>
+      <div id="postDetail"></div>
+    </section>
+
+    <!-- ===================== 메뉴 찾기 (부가 기능) ===================== -->
+    <section id="page-home" class="page" hidden>
+      <section class="welcome">
+        <div class="eyebrow" data-i18n="heroEyebrow">학교 주변 먹거리 도우미</div>
+        <h1 data-i18n-html="heroTitle">오늘의 학식<br></h1>
+        <p data-i18n="heroSub"></p><button id="ctaBtn" class="primary-button"><span data-i18n="ctaPhoto">식권사러가기</span>
+          <span>→</span></button>
+        <div class="welcome-art" aria-hidden="true"><span class="art-sun"></span><span class="art-bowl">🍲</span><span
+            class="art-spark">✦</span></div>
+      </section>
+      <section class="section-block">
+        <div class="section-heading">
+          <div><span class="section-kicker">NEARBY</span>
+            <h2 data-i18n="nearbyTitle">주변 가게 둘러보기</h2>
+          </div><a href="#map" class="more-link" data-i18n="moreLink">더 보기 ›</a>
+        </div>
+        <div class="nearby-card">
+          <div class="nearby-icon">⌖</div>
+          <div><b data-i18n="nearbyCard">학교 근처 가게와 메뉴</b>
+            <p data-i18n="nearbyDesc">학생들이 함께 채우는 동네 안내</p>
+          </div><a href="#map"><span data-i18n="nearbyGo">둘러보기</span> <span>→</span></a>
+        </div>
+      </section>
+      <section class="section-block" id="scan">
+        <div class="section-heading">
+          <div><span class="section-kicker">QUICK GUIDE</span>
+            <h2 data-i18n="quickTitle">Quick Search</h2>
+          </div><span class="step-pill">01 — 03</span>
+        </div>
+        <form id="searchForm" class="search-box"><span class="search-icon">⌕</span><input id="searchInput" type="search"
+            data-i18n-ph="searchPh" placeholder="음식 이름을 검색해 보세요 (예: 김치찌개)" autocomplete="off"><button type="submit"
+            data-i18n="searchBtn">검색</button></form>
+        <div class="photo-card">
+          <div class="photo-copy"><span class="photo-icon">▧</span>
+            <div><b data-i18n="photoTitle">메뉴판 번역</b>
+              <p data-i18n="photoDesc">사진 속 한글 메뉴를 읽고 음식 정보를 찾아요.</p>
+            </div>
+          </div><label class="upload-button" for="photoInput"><span data-i18n="pickPhoto">사진 촬영</span>
+            <span>＋</span></label><input id="photoInput" type="file" accept="image/*" capture="environment" hidden>
+          <div id="previewWrap" class="preview-wrap" hidden><img id="preview" alt="">
+            <div><b id="fileName"></b><button id="ocrBtn" class="text-button" type="button" data-i18n="ocrBtn">사진 글자
+                읽기</button></div>
+          </div>
+          <div id="progressWrap" class="progress-wrap" hidden>
+            <div class="progress-track"><span id="progressBar"></span></div><span id="progressText"></span>
+          </div><textarea id="ocrText" class="ocr-input" data-i18n-ph="ocrPh"
+            placeholder="사진으론 안보이는 기타사항을 넣어주세요(선택)"></textarea>
+          <div class="button-row"><button id="matchBtn" class="primary-button compact" type="button"><span
+                data-i18n="matchBtn">사진 촬영</span> <span>→</span></button></div>
+        </div>
+      </section>
+      <section id="results" class="section-block result-section">
+        <div class="section-heading">
+          <div><span class="section-kicker">MENU MATCH</span>
+            <h2 data-i18n="resultTitle">메뉴 결과</h2>
+          </div>
+        </div>
+        <div id="summaryBox"></div>
+        <div id="resultList"></div>
+      </section>
+      <section class="section-block">
+        <div class="section-heading">
+          <div><span class="section-kicker">MY FOOD NOTES</span>
+            <h2 data-i18n="avoidTitle">먹지 않는 재료</h2>
+          </div><span class="section-note" data-i18n="avoidNote">선택해두면 프로필에 저장돼요</span>
+        </div>
+        <div id="avoidBox" class="avoid-grid"></div>
+      </section>
+      <section class="section-block">
+        <div class="section-heading">
+          <div><span class="section-kicker">HOW IT WORKS</span>
+            <h2 data-i18n="faqTitle">자주 묻는 질문</h2>
+          </div>
+        </div>
+        <div id="faqBox" class="faq-list"></div>
+      </section>
+    </section>
+
+    <!-- ===================== 주변 가게 (동네 탐방) ===================== -->
+    <section id="page-map" class="page" hidden>
+      <div class="page-title"><span class="section-kicker">LOCAL EXPLORER</span>
+        <h1 data-i18n="mapPageTitle">동네 탐방</h1>
+        <p data-i18n="mapDesc">식당부터 유원지·기념관·축제까지, 지도에서 장소를 선택하고 후기와 별점을 함께 나눠요.</p>
+      </div>
+      <div class="map-tools">
+        <label class="select-wrap"><span data-i18n="areaLabel">탐방 반경</span><select id="areaSel"></select></label>
+        <div id="kindSeg" class="segmented">
+          <button type="button" data-kind="all" data-i18n="filterAll">전체</button>
+          <button type="button" data-kind="food" data-i18n="filterFood">식당·카페</button>
+          <button type="button" data-kind="spot" data-i18n="filterSpot">유원지·명소</button>
+          <button type="button" data-kind="culture" data-i18n="filterCulture">기념관·전시</button>
+          <button type="button" data-kind="fest" data-i18n="filterFest">축제·행사</button>
+        </div>
+      </div>
+
+      <div class="map-sort-row">
+        <span class="muted small" data-i18n="sortLabel">정렬:</span>
+        <div id="placeSortSeg" class="chip-row">
+          <button type="button" class="chip-sm on" data-place-sort="dist" data-i18n="sortDist">가까운 순</button>
+          <button type="button" class="chip-sm" data-place-sort="stars" data-i18n="sortStars">별점 높은 순</button>
+          <button type="button" class="chip-sm" data-place-sort="reviews" data-i18n="sortReviews">후기 많은 순</button>
+        </div>
+      </div>
+
+      <!-- 지도 영역 (현재 오픈소스 Leaflet + OSM 연동, 추후 카카오/네이버 교체 가능) -->
+      <div class="map-frame-card">
+        <div id="exploreMap" class="explore-map" aria-label="동네 탐방 지도"></div>
+        <div class="map-caption" id="mapCaption">📍 기준점: 경상국립대학교 가좌캠퍼스 (가좌동) · 지도를 클릭하거나 핀을 눌러 장소를 선택할 수 있어요.</div>
+      </div>
+
+      <button id="addToggle" class="outline-button" type="button" style="margin-bottom:14px">＋ 장소 선택 및 후기 남기기</button>
+
+      <form id="addForm" class="form-card" hidden>
+        <h2 data-i18n="addToggle">＋ 장소 선택 및 후기 남기기</h2>
+
+        <div class="map-search-panel">
+          <span class="field-title" data-i18n="mapSearchLabel">1. 지도에서 장소 검색 또는 핀 찍기</span>
+          <div class="map-search-bar">
+            <input id="mapSearchInput" type="search" data-i18n-ph="mapSearchPh" placeholder="장소·가게·명소·축제 검색 (예: 진주성, 가좌동 돈까스)" autocomplete="off">
+            <button id="mapSearchBtn" class="btn-ghost" type="button" data-i18n="searchBtn">검색</button>
+          </div>
+          <div id="mapSearchResults" class="map-search-results" hidden></div>
+          <div id="selectedPlaceBadge" class="selected-place-badge" hidden></div>
+        </div>
+
+        <input id="addLat" type="hidden">
+        <input id="addLng" type="hidden">
+
+        <label><span data-i18n="addNamePh">장소 / 가게 이름</span><input id="addName" list="placeNames" required></label>
+        <label><span data-i18n="addKind">분류</span><select id="addKind">
+            <option value="food" data-i18n="filterFood">식당·카페</option>
+            <option value="spot" data-i18n="filterSpot">유원지·명소</option>
+            <option value="culture" data-i18n="filterCulture">기념관·전시</option>
+            <option value="fest" data-i18n="filterFest">축제·행사</option>
+          </select></label>
+        <label><span data-i18n="addAddrPh">주소 / 위치 설명 (선택)</span><input id="addAddr"></label>
+
+        <div class="rating-field">
+          <span class="field-title" data-i18n="ratingLabel">별점 평가</span>
+          <div id="starPicker" class="star-picker" role="radiogroup" aria-label="별점">
+            <button type="button" data-star="1">★</button>
+            <button type="button" data-star="2">★</button>
+            <button type="button" data-star="3">★</button>
+            <button type="button" data-star="4">★</button>
+            <button type="button" data-star="5">★</button>
+            <b id="starValueText">5.0</b>
+          </div>
+        </div>
+
+        <label><span data-i18n="reviewLabel">방문 후기 / 평가</span><textarea id="addReview" data-i18n-ph="reviewPh" placeholder="어떤 점이 좋았나요? 다른 학생들을 위해 솔직한 후기를 남겨주세요 (자동 다국어 번역 지원)" required></textarea></label>
+
+        <label class="upload-button" for="addPhotos"><span data-i18n="fPhoto">후기 사진 추가 (최대 3장)</span> ＋</label>
+        <input id="addPhotos" type="file" accept="image/*" multiple hidden>
+        <div id="addPhotoPrev" class="thumb-row"></div>
+
+        <label id="addMenuWrap"><span data-i18n="menuInfo">메뉴 정보 (식당인 경우 선택 입력)</span><textarea id="addMenu" data-i18n-ph="addMenuPh"></textarea></label>
+
+        <button class="primary-button" type="submit" data-i18n="addSubmit">후기 저장</button>
+      </form>
+
+      <div id="placeList" class="stack-list"></div>
+      <datalist id="placeNames"></datalist>
+    </section>
+
+    <!-- ===================== 스크랩 ===================== -->
+    <section id="page-saved" class="page" hidden>
+      <div class="page-title"><span class="section-kicker">SCRAPBOOK</span>
+        <h1 data-i18n="savedTitle">스크랩</h1>
+        <p data-i18n="savedDesc">스크랩한 게시물과 동네 탐방 장소, 메뉴를 모아보고 검색해요.</p>
+      </div>
+      <div class="scrap-toolbar">
+        <div class="search-box scrap-search-box">
+          <span class="search-icon">⌕</span>
+          <input id="scrapSearch" type="search" data-i18n-ph="scrapSearchPh" placeholder="스크랩한 제목, 내용, 장소명, #해시태그 검색…" autocomplete="off">
+        </div>
+        <div id="scrapSeg" class="segmented">
+          <button type="button" data-scrap-tab="all" class="on" data-i18n="catAll">전체</button>
+          <button type="button" data-scrap-tab="post" data-i18n="scrapTabPost">게시물</button>
+          <button type="button" data-scrap-tab="place" data-i18n="scrapTabPlace">동네 장소</button>
+          <button type="button" data-scrap-tab="menu" data-i18n="scrapTabMenu">메뉴</button>
+        </div>
+      </div>
+      <div id="savedList" class="stack-list"></div>
+    </section>
+
+    <!-- ===================== 내 정보 (국적 설정) ===================== -->
+    <section id="page-profile" class="page" hidden>
+      <div class="page-title"><span class="section-kicker">MY PROFILE</span>
+        <h1 data-i18n="profTitle">내 정보</h1>
+        <p data-i18n="profDesc">국적에 따라 보이는 언어가 정해져요.</p>
+      </div>
+      <div class="profile-card">
+        <div class="av lg av-editable av-wrap" id="profAv" title="클릭하여 프로필 사진 변경">
+          <img id="profAvImg" src="image/profile/profile_icon.svg" alt="프로필">
+          <span id="profAvBadge" class="av-vbadge lg" hidden></span>
+        </div>
+        <div class="profile-info-col">
+          <div class="prof-name-row">
+            <b id="profName"></b>
+            <span id="profVerifyPill"></span>
+          </div>
+          <div class="muted small" id="profMeta"></div>
+          <div class="avatar-edit-btns">
+            <label for="fAvatarInput" class="btn-ghost btn-sm avatar-upload-lbl" data-i18n="profPhotoEdit">프로필 사진 변경</label>
+            <input id="fAvatarInput" type="file" accept="image/*" hidden>
+            <button type="button" id="fAvatarReset" class="btn-ghost btn-sm" data-i18n="profPhotoReset">기본 로고로</button>
+          </div>
+        </div>
+      </div>
+      <form id="profileForm" class="form-card">
+        <div class="signup-open-note" data-i18n="signupOpenNote">🌱 아직 유학을 오지 않은 유학 준비생도 인증 없이 가입·활동이 가능하며, 국가별 유학 준비 게시판에서 소통할 수 있어요.</div>
+        <label><span data-i18n="nickLabel">닉네임</span><input id="fNick" maxlength="20" required></label>
+        <label><span data-i18n="natLabel">국적 설정 (언어 자동 설정)</span><select id="fNat"></select></label>
+        <div class="nat-note">✨ <span data-i18n="natNote">국적을 바꾸고 저장하면 메뉴와 모든 글·댓글이 그 나라 언어로 자동 번역돼요.</span></div>
+        <button class="primary-button" type="submit"><span data-i18n="profSave">저장</span> <span>→</span></button>
+      </form>
+
+      <!-- 유학생 재학 / 유학 경험(선배) 인증 섹션 -->
+      <form id="verifyForm" class="form-card verify-card">
+        <div class="verify-head">
+          <div>
+            <span class="section-kicker">STUDENT & ALUMNI VERIFICATION</span>
+            <h2 data-i18n="verifyTitle">유학생 재학 · 유학 경험 인증</h2>
+          </div>
+          <span id="verifyStatusChip" class="v-status-chip"></span>
+        </div>
+        <p class="muted small" style="margin:0" data-i18n="verifyDesc">재학생이나 이미 유학을 다녀온 선배가 인증을 완료하면 프로필에 작은 인증 뱃지가 달리며, 유학 준비 게시판에서 신뢰도 높은 조언을 남길 수 있어요.</p>
+        <label>
+          <span data-i18n="verifyTypeLabel">인증 구분</span>
+          <select id="vType">
+            <option value="enrolled" data-i18n="verifyTypeEnrolled">✓ 유학 재학생 인증 (현재 재학·교환·어학연수 중)</option>
+            <option value="alumni" data-i18n="verifyTypeAlumni">🎓 유학 경험·졸업 인증 (유학 수료·졸업·기경험자)</option>
+          </select>
+        </label>
+        <div class="verify-grid-2">
+          <label>
+            <span data-i18n="verifyCountryLabel">유학 국가</span>
+            <select id="vCountry">
+              <option value="KR" data-i18n="prepCountryKR">🇰🇷 한국 (KR)</option>
+              <option value="US" data-i18n="prepCountryUS">🇺🇸 미국 (US)</option>
+              <option value="CN" data-i18n="prepCountryCN">🇨🇳 중국 (CN)</option>
+              <option value="JP" data-i18n="prepCountryJP">🇯🇵 일본 (JP)</option>
+            </select>
+          </label>
+          <label>
+            <span data-i18n="verifySchoolLabel">학교 / 기관명</span>
+            <input id="vSchool" maxlength="40" data-i18n-ph="verifySchoolPh" placeholder="예: 경상국립대학교, UC Berkeley, 도쿄대" required>
+          </label>
+        </div>
+        <label>
+          <span data-i18n="verifyEmailLabel">학교 이메일 또는 학생증·수료증 번호 (파일럿 즉시 인증)</span>
+          <input id="vProof" maxlength="60" data-i18n-ph="verifyEmailPh" placeholder="예: student@gnu.ac.kr 또는 학번/증명번호 입력" required>
+        </label>
+        <div class="verify-btn-row">
+          <button class="primary-button" type="submit"><span data-i18n="verifySubmit">인증 뱃지 적용하기</span> <span>✓</span></button>
+          <button id="verifyClearBtn" class="btn-ghost" type="button" data-i18n="verifyClear">미인증(유학 준비생)으로 전환</button>
+        </div>
+      </form>
+      <div class="section-block">
+        <div class="section-heading">
+          <div><span class="section-kicker">EXPLORE</span>
+            <h2 data-i18n="moreTitle">더 보기</h2>
+          </div>
+        </div>
+        <div class="more-grid"><a href="#board"><span>☷</span><b data-i18n="navBoard">게시판</b><small
+              data-i18n="dBoard">학교 생활 이야기</small></a><a href="#home"><span>⌕</span><b data-i18n="navMenu">메뉴
+              찾기</b><small data-i18n="dHome">사진과 이름으로 음식 검색</small></a><a href="#map"><span>⌖</span><b
+              data-i18n="navMap">동네 탐방</b><small data-i18n="dMap">식당·명소·축제 지도와 후기</small></a><a
+            href="#saved"><span>☆</span><b data-i18n="navSaved">스크랩</b><small data-i18n="dSaved">스크랩한 게시물·장소
+              모아보기</small></a></div>
+      </div>
+    </section>
+  </main>
+
+  <nav class="tabs" aria-label="주요 메뉴">
+    <a href="#board" data-page="board"><span>☷</span><em data-i18n="navBoard">게시판</em></a>
+    <a href="#home" data-page="home"><span>⌕</span><em data-i18n="navMenu">메뉴 찾기</em></a>
+    <a href="#map" data-page="map"><span>⌖</span><em data-i18n="navMap">동네 탐방</em></a>
+    <a href="#saved" data-page="saved"><span>☆</span><em data-i18n="navSaved">스크랩</em></a>
+    <a href="#profile" data-page="profile"><span>☺</span><em data-i18n="navProfile">내 정보</em></a>
+  </nav>
+
+  <div id="sheetBg" class="sheet-bg" hidden>
+    <section class="sheet"><button id="sheetClose" class="sheet-close" type="button" aria-label="닫기">×</button>
+      <div class="section-kicker">SHARE WITH CAMPUS</div>
+      <h2 data-i18n="writeTitle">새 글 쓰기</h2>
+      <form id="postForm" class="form-card">
+        <div class="author-line" id="pAuthor"></div>
+        <div class="verify-grid-2">
+          <label><span data-i18n="pPrepLabel">게시판 구분</span><select id="pPrep"></select></label>
+          <label><span data-i18n="pCatLabel">말머리 (주제)</span><select id="pCat"></select></label>
+        </div>
+        <label><span data-i18n="fTitlePh">제목</span><input id="pTitle" required></label>
+        <div class="body-with-anon">
+          <label><span data-i18n="bodyLabel">내용</span><textarea id="pBody" data-i18n-ph="fBodyPh"
+              required></textarea></label>
+          <div class="anon-right-row">
+            <span class="hashtag-hint" data-i18n="hashtagHint">본문에 #태그를 적으면 자동 등록돼요</span>
+            <label class="check anon-check"><input type="checkbox" id="pAnon" checked><span data-i18n="anonPost">익명으로
+                쓰기</span></label>
+          </div>
+        </div>
+        <label class="upload-button" for="pPhotos"><span data-i18n="fPhoto">사진 추가 (최대 3장)</span> ＋</label><input
+          id="pPhotos" type="file" accept="image/*" multiple hidden>
+        <div id="pPhotoPrev"></div>
+        <p id="postMsg" class="form-message"></p>
+        <button class="primary-button" type="submit"><span data-i18n="fSubmit">게시하기</span> <span>→</span></button>
+      </form>
+    </section>
+  </div>
+  <div id="lightboxModal" class="lightbox-modal" hidden aria-hidden="true" role="dialog" aria-label="이미지 크게 보기">
+    <button type="button" id="lightboxClose" class="lightbox-close" aria-label="닫기">×</button>
+    <img id="lightboxImg" src="" alt="확대 이미지">
+  </div>
+  <div id="toastEl" class="toast" role="status"></div>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js" defer></script>
+  <script src="app.js" defer></script>
+</body>
+
+</html>

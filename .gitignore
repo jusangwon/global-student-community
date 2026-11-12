@@ -1,0 +1,28 @@
+# 1. API 키 및 자격 증명 (절대 커밋 금지)
+keys/*
+!keys/.gitkeep
+*.key
+.env
+.env.*
+
+# 2. 파이썬 캐시 및 가상환경
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+
+# 3. 런타임 중 생성되는 로컬 테스트 데이터
+posts.json
+places.json
+
+# 4. 운영체제 및 에디터 임시 파일
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.log
+*.zip
+
